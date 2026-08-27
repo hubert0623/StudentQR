@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>출결 기록 시스템</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    * {
+      font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+
+  <!-- 메인 카드 컨테이너 -->
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+    
+    <!-- 상단 헤더 -->
+    <div class="bg-indigo-600 px-6 py-5 text-white">
+      <div class="flex items-center space-x-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        </svg>
+        <h1 class="text-xl font-bold">출결 기록</h1>
+      </div>
+      <p class="text-xs text-indigo-100 mt-1">이름과 상태를 선택한 후 제출해 주세요.</p>
+    </div>
+
+    <!-- 입력 폼 -->
+    <form id="attendanceForm" class="p-6 space-y-5" onsubmit="handleFormSubmit(event)">
+      
+      <!-- 1. 이름 입력 -->
+      <div>
+        <label for="name" class="block text-sm font-semibold text-slate-700 mb-1.5">
+          이름 <span class="text-rose-500">*</span>
+        </label>
+        <div class="relative">
+          <input 
+            type="text" 
+            id="name" 
+            name="name" 
+            placeholder="이름을 입력하세요 (예: 홍길동)"
+            required
+            class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition text-base"
+          >
+        </div>
+        <p id="rememberNotice" class="text-xs text-indigo-600 mt-1.5 hidden flex items-center space-x-1">
+          <span>✓ 최근 입력한 이름이 자동 입력되었습니다.</span>
+        </p>
+      </div>
+
+      <!-- 2. 구분 선택 버튼 (출석, 지각) -->
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-2">
+          구분 <span class="text-rose-500">*</span>
+        </label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="cursor-pointer">
+            <input type="radio" name="status" value="출석" checked class="peer sr-only">
+            <div class="py-3 px-4 text-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-base font-semibold peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 peer-checked:shadow-md transition">
+              출석
+            </div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input type="radio" name="status" value="지각" class="peer sr-only">
+            <div class="py-3 px-4 text-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-base font-semibold peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500 peer-checked:shadow-md transition">
+              지각
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 3. 사유 및 메모 입력 -->
+      <div>
+        <label for="reason" class="block text-sm font-semibold text-slate-700 mb-1.5">
+          사유 / 전달사항 <span class="text-slate-400 font-normal">(선택)</span>
+        </label>
+        <textarea 
+          id="reason" 
+          name="reason" 
+          rows="2" 
+          placeholder="지각 사유나 전달사항이 있는 경우 입력해주세요."
+          class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition text-base resize-none"
+        ></textarea>
+      </div>
+
+      <!-- 제출 버튼 -->
+      <button 
+        type="submit" 
+        id="submitBtn" 
+        class="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-md shadow-indigo-200 transition duration-150 flex items-center justify-center space-x-2"
+      >
+        <span id="btnText">기록 제출하기</span>
+        <svg id="btnSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </button>
+
+    </form>
+
+    <!-- 완료 결과 카드 (초기 숨김) -->
+    <div id="successCard" class="p-6 text-center space-y-4 hidden">
+      <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-slate-800">기록이 완료되었습니다!</h2>
+        <p class="text-sm text-slate-500 mt-1" id="resultDetails"></p>
+      </div>
+
+      <div class="pt-2 flex flex-col gap-2">
+        <button 
+          onclick="resetFormForNewEntry(false)"
+          class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition"
+        >
+          추가 기록하기
+        </button>
+        <button 
+          onclick="resetFormForNewEntry(true)"
+          class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium rounded-xl transition"
+        >
+          다른 사람 이름으로 입력하기
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // =========================================================================
+    // ⚙️ [설정] 배포한 Google Apps Script 웹 앱 URL을 아래 따옴표 안에 넣어주세요.
+    // =========================================================================
+    const GAS_API_URL = "여기에_GAS_배포_URL_입력";
+
+    const STORAGE_KEY_NAME = 'student_qr_saved_name';
+
+    // 페이지 로드 시 이전 저장된 이름 자동 입력
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedName = localStorage.getItem(STORAGE_KEY_NAME);
+      if (savedName) {
+        const nameInput = document.getElementById('name');
+        nameInput.value = savedName;
+        document.getElementById('rememberNotice').classList.remove('hidden');
+      }
+    });
+
+    // 폼 제출 핸들러
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const nameInput = document.getElementById('name');
+      const name = nameInput.value.trim();
+      const status = document.querySelector('input[name="status"]:checked')?.value || '출석';
+      const reason = document.getElementById('reason').value.trim();
+
+      if (!name) {
+        alert('이름을 입력해주세요.');
+        nameInput.focus();
+        return;
+      }
+
+      if (!GAS_API_URL || GAS_API_URL.includes("https://script.google.com/macros/s/AKfycbw0yh_FYg-28brvMeHy_ERhF2m3jVKUGtUwnClyxeE97umF13tGtHM2XxSwDUKxQNDpYw/exec")) {
+        alert("⚠️ GAS 웹 앱 URL이 설정되지 않았습니다.\nindex.html 파일 상단의 GAS_API_URL 변수를 설정해주세요.");
+        return;
+      }
+
+      // 로컬스토리지에 이름 기억
+      localStorage.setItem(STORAGE_KEY_NAME, name);
+
+      // UI 로딩 상태 변경
+      setLoading(true);
+
+      const payload = {
+        name: name,
+        status: status,
+        reason: reason
+      };
+
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          // GAS의 302 리디렉션 처리
+          redirect: 'follow',
+          // simple request 형태로 전송하여 불필요한 CORS preflight 방지
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showSuccess(result.name, result.status, result.timestamp);
+        } else {
+          alert('저장 실패: ' + (result.message || '알 수 없는 오류'));
+        }
+      } catch (err) {
+        console.error('Fetch error:', err);
+        // 네트워크 상태 등에 의해 응답 수신만 실패했을 수 있으나 알림 제공
+        alert('서버와 통신하는 중 문제가 발생했습니다.\n다시 시도해주세요.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function showSuccess(name, status, timestamp) {
+      document.getElementById('attendanceForm').classList.add('hidden');
+      const successCard = document.getElementById('successCard');
+      successCard.classList.remove('hidden');
+
+      document.getElementById('resultDetails').innerText = 
+        `[${name}] 님 / ${status} (${timestamp || '방금 전'})`;
+    }
+
+    function setLoading(isLoading) {
+      const submitBtn = document.getElementById('submitBtn');
+      const btnText = document.getElementById('btnText');
+      const btnSpinner = document.getElementById('btnSpinner');
+
+      if (isLoading) {
+        submitBtn.disabled = true;
+        btnText.innerText = '저장 중...';
+        btnSpinner.classList.remove('hidden');
+      } else {
+        submitBtn.disabled = false;
+        btnText.innerText = '기록 제출하기';
+        btnSpinner.classList.add('hidden');
+      }
+    }
+
+    // 다시 입력하기
+    function resetFormForNewEntry(clearName) {
+      if (clearName) {
+        localStorage.removeItem(STORAGE_KEY_NAME);
+        document.getElementById('name').value = '';
+        document.getElementById('rememberNotice').classList.add('hidden');
+      }
+      document.getElementById('reason').value = '';
+      document.querySelector('input[name="status"][value="출석"]').checked = true;
+
+      document.getElementById('successCard').classList.add('hidden');
+      document.getElementById('attendanceForm').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
